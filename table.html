@@ -1,27 +1,128 @@
 <!DOCTYPE html>
 <html>
+	<head>
+		<style>
+			table {
+				/*To avoid spaces between the cells*/
+				border-collapse: collapse;
+				/*To center it*/
+				margin-left:auto; 
+			    margin-right:auto;
+			}
+			td, th, caption {
+				/*To add solid lines in the cells*/
+  				border: solid 1px black;
+  				/*To add spacing between the text in the cells and the borders*/
+  				padding: 10px;
+  				text-align: center;
+			  }
+		</style>
+	</head>
 	<body>
 	<script src="http://d3js.org/d3.v3.min.js"></script>
 		<script>
 
+			// Add a hard coded headline, dynamically with D3 (from http://www.bls.gov/web/laus/laumstrk.htm)
+			var H1 = d3.select("body").append("h1").text("Unemployment Rates for States");
+
+			// Center header
+			H1.style({"text-align": "center"});
+		
+		// This piece of code prints the output of d3.text to the console to check what it looks like
+		// d3.text("unemp_states_us_nov_2013.tsv", function(error, data) {
+  //   		console.log(d3.tsv.parseRows(data));
+		// });
+			
+			// d3.text reads the url file and returns a text file that can then be parsed as a tsv file
+			// We cannot use d3.tsv straight away as this skips the header line which we want to visualise
 			d3.text("unemp_states_us_nov_2013.tsv", function(error, data){
 
-				var table = d3.select("body").append("table"),
-        			tbody = table.append("tbody");
+				// Creates the DOM elements table, tbody and thead
+				var TABLE = d3.select("body").append("table"),
+					caption = TABLE.append("caption"),
+					thead = TABLE.append("thead")
+        			tbody = TABLE.append("tbody");
 
+        		// Another way to add the caption without using the caption tag
+        		// var caption = d3.select("thead").append("tr").append("th").attr("colspan", "3");
+
+        		// Add a hard coded caption, dynamically with D3 (from http://www.bls.gov/web/laus/laumstrk.html
+				caption.html("<b>Unemployment Rates for States<br>Monthly Rankings<br>Seasonally Adjusted<br>Apr. 2014<sup>p</sup></b>");
+
+        		var parsedData = d3.tsv.parseRows(data);
+        		// .shift() removes the first element of the array parsedData and modifies the array.
+        		// It returns this element and I store it into the variable called header
+        		var header = parsedData.shift();
+
+        		// Create the rows to the table based on the number of entries in the parsedData array
 				var rows = tbody.selectAll("tr")
-					.data(data)
+					.data(parsedData)
 					.enter()
-      				.append("tr");
+      				.append("tr")
+      				.on("mouseover", function mouseOver(d, i){
+     					d3.select(this).style({"background-color": "yellow"});
+     				})
+     				.on("mouseout", mouseOut);
 
-      			var header = tbody.selectAll("th")
-					.data(function(header) {
-						return header[0];
+      			// Append a child row element "tr" to <thead> where to put the header
+      			var rowsH = thead.append("tr");
+
+      			// Create the cells with <td> for each element of the array of array parsedData
+      			var cells = rows.selectAll("td")
+					.data(function(c, i) {
+						return parsedData[i];
 					})
+					.enter()
+      				.append("td")
+      				.text(function(d) { return d; })
+      				// Adding a class element corresponding to the array position for column highlight on mouseover
+      				.attr('class', function(d, i){ return "col_" + i; })
+      				.on("mouseover", function mouseOver(d, i){
+
+      					d3.selectAll('td.col_' + i)
+                    		.style('background-color', 'yellow');
+     				})
+     				.on("mouseout", function mouseOver(d, i){
+
+      					d3.selectAll('td.col_' + i)
+                    		.style('background-color', null);
+     				});
+
+      			// Creates the header cell
+      			var cellsH = rowsH.selectAll("th")
+					.data(header)
 					.enter()
       				.append("th")
       				.text(function(d) { return d; });
-			});
+
+      				//The code below creates the header rows without requiring <thead>
+     //  			var headerCell = rows.select("th")
+					// .data(header)
+					// .enter()
+     //  				.insert("th", ":first-child")
+     //  				.order()
+     //  				.text(function(d) { return d; });
+
+     			//Make the table zebra coloured
+     			tbody.selectAll("tr").style("background-color", function(d, i){
+     				if(i%2 == 0){
+     					return "#D8D8D8";
+     				}
+     			})
+
+     			//After mouseover, return the cells to their original colour
+     			function mouseOut(d, i){
+     				// tbody.selectAll("td").style("background-color", "white");
+     				tbody.selectAll("tr").style("background-color", function(d, i){
+	     				if(i%2 == 0){
+	     					return "#D8D8D8";
+	     				}
+	     				else{
+	     					return "white";
+	     				}
+     				})
+      		    }
+      		});
 
 		</script>
 	</body>
