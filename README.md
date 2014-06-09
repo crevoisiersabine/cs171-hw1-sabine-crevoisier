@@ -1,5 +1,3 @@
-![Homework 1](img/header.png)
-
 <hr>
 
 **Assignment completed by:** Sabine Crevoisier
