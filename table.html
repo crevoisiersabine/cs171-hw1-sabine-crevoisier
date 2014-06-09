@@ -1,7 +1,28 @@
 <!DOCTYPE html>
 <html>
-	<head>
-	</head>
 	<body>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+		<script>
+
+			d3.text("unemp_states_us_nov_2013.tsv", function(error, data){
+
+				var table = d3.select("body").append("table"),
+        			tbody = table.append("tbody");
+
+				var rows = tbody.selectAll("tr")
+					.data(data)
+					.enter()
+      				.append("tr");
+
+      			var header = tbody.selectAll("th")
+					.data(function(header) {
+						return header[0];
+					})
+					.enter()
+      				.append("th")
+      				.text(function(d) { return d; });
+			});
+
+		</script>
 	</body>
 </html>
