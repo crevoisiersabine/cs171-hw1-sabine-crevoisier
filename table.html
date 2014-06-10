@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<style>
+
 			table {
 				/*To avoid spaces between the cells*/
 				border-collapse: collapse;
@@ -21,6 +22,10 @@
 	<body>
 	<script src="http://d3js.org/d3.v3.min.js"></script>
 		<script>
+
+			//Define click counter	
+			var counterState = 0;
+			var counterRate = 0;
 
 			// Add a hard coded headline, dynamically with D3 (from http://www.bls.gov/web/laus/laumstrk.htm)
 			var H1 = d3.select("body").append("h1").text("Unemployment Rates for States");
@@ -93,7 +98,10 @@
 					.data(header)
 					.enter()
       				.append("th")
-      				.text(function(d) { return d; });
+      				.text(function(d) { return d; })
+      				.attr('class', function(d, i){ return "colH_" + i; })
+      				.on("click", toggle)
+      				.on("mouseover", mouse);
 
       				//The code below creates the header rows without requiring <thead>
      //  			var headerCell = rows.select("th")
@@ -122,6 +130,83 @@
 	     				}
      				})
       		    }
+
+      		    //On load make the table sorted by rate in increasing order
+      		    tbody.selectAll("tr").sort(function(a, b) {
+   					return (d3.ascending(a[2], b[2]) || d3.ascending(a[1], b[1]));
+				});
+
+      		    function toggle(d, i){
+					if (i == 1){
+						counterState++;
+						if (counterState%2 == 0){
+							d3.select(".colH_1").style("cursor", "s-resize");
+							decreasing(1);
+						}
+						else{
+							d3.select(".colH_1").style("cursor", "n-resize");
+							increasing(1);
+						}
+					}
+					else if (i == 2){
+						counterRate++;
+						if (counterRate%2 != 0){
+							d3.select(".colH_2").style("cursor", "s-resize");
+							decreasing(2);
+						}
+						else{
+							d3.select(".colH_2").style("cursor", "n-resize");
+							increasing(2);
+						}
+					}
+				}
+
+      		    function increasing(i){
+
+      		    	if (i == 1){
+	      		    	tbody.selectAll("tr").sort(function(a, b) {
+							  return d3.ascending(a[i], b[i]);
+						});
+					}
+					else if (i == 2){
+						tbody.selectAll("tr").sort(function(a, b) {
+   							//The statement below will only evaluate the statement after the or is the first statement returns 0 (ie. a tie)
+   							return (d3.ascending(a[i], b[i]) || d3.ascending(a[i-1], b[i-1]));
+						});
+					}      		    
+				}
+
+				function decreasing(i){
+
+      		    	if (i == 1){
+	      		    	tbody.selectAll("tr").sort(function(a, b) {
+							  return d3.descending(a[i], b[i]);
+						});
+					}
+					else if (i == 2){
+						tbody.selectAll("tr").sort(function(a, b) {
+   							//The statement below will only evaluate the statement after the or is the first statement returns 0 (ie. a tie)
+   							return (d3.descending(a[i], b[i]) || d3.descending(a[i-1], b[i-1]));
+						});
+					}      		    
+				}
+
+				//This function causes the cursor to change on hover as per the assignment, however I prefer that the cursor changes upon click, without requiring to hover out of the cell and back in to see the change. Therefore the code is copied into the on.click function. However this is kept because it is nice to get the cursor to change on the first instance prior to any click.
+				function mouse(d, i){
+					if(i == 1 && counterState%2 == 0){
+						d3.select(".colH_1").style("cursor", "s-resize");
+					}
+					if(i == 1 && counterState%2 != 0){
+						d3.select(".colH_1").style("cursor", "n-resize");
+					}
+					else if(i == 2 && counterRate%2 != 0){
+						d3.select(".colH_2").style("cursor", "s-resize");
+					}
+					else if(i == 2 && counterRate%2 == 0){
+						d3.select(".colH_2").style("cursor", "n-resize");
+					}
+				}
+
       		});
 
 		</script>
