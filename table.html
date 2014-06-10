@@ -24,8 +24,7 @@
 		<script>
 
 			//Define click counter	
-			var counterState = 0;
-			var counterRate = 0;
+			var click = 1;
 
 			// Add a hard coded headline, dynamically with D3 (from http://www.bls.gov/web/laus/laumstrk.htm)
 			var H1 = d3.select("body").append("h1").text("Unemployment Rates for States");
@@ -61,7 +60,7 @@
 
         		// Create the rows to the table based on the number of entries in the parsedData array
 				var rows = tbody.selectAll("tr")
-					.data(parsedData)
+					.data(parsedData, String)
 					.enter()
       				.append("tr")
       				.on("mouseover", function mouseOver(d, i){
@@ -81,17 +80,7 @@
       				.append("td")
       				.text(function(d) { return d; })
       				// Adding a class element corresponding to the array position for column highlight on mouseover
-      				.attr('class', function(d, i){ return "col_" + i; })
-      				.on("mouseover", function mouseOver(d, i){
-
-      					d3.selectAll('td.col_' + i)
-                    		.style('background-color', 'yellow');
-     				})
-     				.on("mouseout", function mouseOver(d, i){
-
-      					d3.selectAll('td.col_' + i)
-                    		.style('background-color', null);
-     				});
+      				.attr('class', function(d, i){ return "col_" + i; });
 
       			// Creates the header cell
       			var cellsH = rowsH.selectAll("th")
@@ -99,9 +88,7 @@
 					.enter()
       				.append("th")
       				.text(function(d) { return d; })
-      				.attr('class', function(d, i){ return "colH_" + i; })
-      				.on("click", toggle)
-      				.on("mouseover", mouse);
+      				.attr('class', function(d, i){ return "colH_" + i; });
 
       				//The code below creates the header rows without requiring <thead>
      //  			var headerCell = rows.select("th")
@@ -111,12 +98,59 @@
      //  				.order()
      //  				.text(function(d) { return d; });
 
-     			//Make the table zebra coloured
+     			// Make the table zebra coloured
      			tbody.selectAll("tr").style("background-color", function(d, i){
      				if(i%2 == 0){
      					return "#D8D8D8";
      				}
      			})
+
+     			//Dimensions for the svg where rectange of last column will fit
+     			var height = 15;
+				var width = 30;
+
+				//Add an extra column to the table
+				rows.insert("td").attr("class", "col_3").append("svg")
+				   .attr("width", width)
+				   .attr("height", height)
+				   .append("rect")
+				   .attr("height", height)
+				   .attr("width", function(d) { return parseFloat(d[0]); });
+
+				//Add a header to the extra column, add a class and sorting functionality
+				rowsH.insert("th").text("Chart").attr("class", "colH_3");
+
+				//Bind the width of the rect bar to the rows DOM element (?no need to do that actually as for sorting I use the value of rate instead of rectangle length...)
+				d3.selectAll("rect").each(function(d, i){
+    				rows.data()[i].push(d3.select(this).attr("width"));
+  				});
+
+				// Binds this last header cell to cellsH for clicking and hovering events
+				cellsH[0].push(d3.select("th.colH_3")[0][0]);
+				cellsH.on("click", toggle)
+      				.on("mouseover", mouse);
+
+      			// Add this last column to the cells to enable hovering over last column as previous ones
+      			for(j = 0; j < cells.length; j++){
+      				cells[0, j].push(d3.selectAll("td.col_3")[0][j]);
+      			}
+      			cells.on("mouseover", function mouseOver(d, i){
+
+      					d3.selectAll('td.col_' + i)
+                    		.style('background-color', 'yellow');
+     				})
+     				.on("mouseout", function mouseOver(d, i){
+
+      					if (i!=2){
+      						d3.selectAll('td.col_' + i)
+                    		  .style('background-color', null);
+                    	}
+                    	else{
+                    		d3.selectAll('td.col_2').style("background-color", function(d, i){
+								return colorScale(i);
+							});
+                    	}
+     				});
 
      			//After mouseover, return the cells to their original colour
      			function mouseOut(d, i){
@@ -137,74 +171,58 @@
 				});
 
       		    function toggle(d, i){
-					if (i == 1){
-						counterState++;
-						if (counterState%2 == 0){
-							d3.select(".colH_1").style("cursor", "s-resize");
-							decreasing(1);
-						}
-						else{
-							d3.select(".colH_1").style("cursor", "n-resize");
-							increasing(1);
-						}
+      		    	increasing(i, click);
+					if (click == 1){
+						d3.select(".colH_" + i).style("cursor", "s-resize");
 					}
-					else if (i == 2){
-						counterRate++;
-						if (counterRate%2 != 0){
-							d3.select(".colH_2").style("cursor", "s-resize");
-							decreasing(2);
-						}
-						else{
-							d3.select(".colH_2").style("cursor", "n-resize");
-							increasing(2);
-						}
+					else{
+						d3.select(".colH_" + i).style("cursor", "n-resize");
 					}
+					click*=(-1);
 				}
 
-      		    function increasing(i){
+      		    function increasing(i, click){
 
       		    	if (i == 1){
 	      		    	tbody.selectAll("tr").sort(function(a, b) {
-							  return d3.ascending(a[i], b[i]);
+							  return click*d3.ascending(a[i], b[i]);
 						});
 					}
 					else if (i == 2){
 						tbody.selectAll("tr").sort(function(a, b) {
    							//The statement below will only evaluate the statement after the or is the first statement returns 0 (ie. a tie)
-   							return (d3.ascending(a[i], b[i]) || d3.ascending(a[i-1], b[i-1]));
-						});
-					}      		    
-				}
-
-				function decreasing(i){
-
-      		    	if (i == 1){
+   							return click*(d3.ascending(a[i], b[i]) || d3.ascending(a[i-1], b[i-1]));
+						});  		    
+					}
+					else if (i == 3){
 	      		    	tbody.selectAll("tr").sort(function(a, b) {
-							  return d3.descending(a[i], b[i]);
+							  return click*d3.ascending(a[i-1], b[i-1]);
 						});
 					}
-					else if (i == 2){
-						tbody.selectAll("tr").sort(function(a, b) {
-   							//The statement below will only evaluate the statement after the or is the first statement returns 0 (ie. a tie)
-   							return (d3.descending(a[i], b[i]) || d3.descending(a[i-1], b[i-1]));
-						});
-					}      		    
 				}
 
 				//This function causes the cursor to change on hover as per the assignment, however I prefer that the cursor changes upon click, without requiring to hover out of the cell and back in to see the change. Therefore the code is copied into the on.click function. However this is kept because it is nice to get the cursor to change on the first instance prior to any click.
 				function mouse(d, i){
-					if(i == 1 && counterState%2 == 0){
-						d3.select(".colH_1").style("cursor", "s-resize");
+					if(click == 1){
+						d3.select(".colH_" + i).style("cursor", "s-resize");
 					}
-					if(i == 1 && counterState%2 != 0){
-						d3.select(".colH_1").style("cursor", "n-resize");
+					else{
+						d3.select(".colH_" + i).style("cursor", "n-resize");
 					}
-					else if(i == 2 && counterRate%2 != 0){
-						d3.select(".colH_2").style("cursor", "s-resize");
-					}
-					else if(i == 2 && counterRate%2 == 0){
-						d3.select(".colH_2").style("cursor", "n-resize");
-					}
+				}
+
+				// Visually encode the table as per rate value
+				d3.selectAll('td.col_2').style("background-color", function(d, i){
+					return colorScale(i);
+				});
+
+				function colorScale(i){
+					var color = d3.scale.linear()
+					  .domain([0, tbody.selectAll("tr")[0].length-1])
+					  .interpolate(d3.interpolateRgb)
+					  .range(["orangered", "silver"]);
+
+					return color(i);
 				}
 
       		});
