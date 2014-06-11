@@ -54,8 +54,6 @@
 		                    .append("rect")
 		                    .attr("width", function(d) { return xScale(d.Rate); })
 		                    .attr("height", bar_height);
-		                    // .attr("x", xScale(min))
-		                    // .attr("y", function(d) { return yScale(d.State); });
 				
 		        // Add labels of State
 		        groups.append("text")
@@ -87,48 +85,60 @@
 			    			.attr("font-size", "30")
 			    			.attr("text-align", "center");
 
-			 //    // Previous positions of the bars
-			 //    var position = []
-			 //    data.forEach(function (d, i) {
-				// 		position.push(d.State yScale(d.State));
-				// });
-
-				// console.log(position);
+			    var counter = 1;
 
 			    // Dynamically re-order the data based on form choice
-			    d3.selectAll("input").on("change", reorder);
-			    d3.selectAll("input").on("click", function(){ clicks*=(-1); });
+			    d3.selectAll("input").on("click", function(d, i) {
+			    	counter*=(-1);
+			    	return i == 0 ? reorderState() : reorderRate();
+			    });
 
-			    var clicks = 1
-
-			 //    data.forEach(function (d, i) {
-				// 		console.log(data);
-				// });
-
-			    function reorder() {
+			    function reorderState() {
 			    	data.sort(function(a, b) {
-			    		return clicks*(d3.ascending(a.State, b.State) || d3.ascending(a.Rate, b.Rate));
-			    	});
+			    		return -counter*(d3.ascending(a.State, b.State) || d3.ascending(a.Rate, b.Rate));
+			    	})
+			    	rearrangeBars();
+			    };
 
-			    	newDomain = []
-			    	for(i = 0; i < data.length; i++){
-			    		newDomain.push(data[i].State);
-			    	};
+			   	function reorderRate() {
+			    	data.sort(function(a, b) {
+			    		return counter*(d3.ascending(a.Rate, b.Rate));
+			    	})
+			    	rearrangeBars();
+			    };
 
-			    	yScale.domain(newDomain);
+			    function rearrangeBars() {
 
-			  //   	data.forEach(function (d, i) {
-					// 	console.log(data);
-					// });
-			    	
-			    	groups
-					   .transition()
-					   .duration(750)
-					   .delay(function(d, i) { return i * 10; })
-					   .attr("transform", function(d, i) { 
-					   	return "translate(0, " + yScale(d.State) + ")";
-					   });
-			    }
+				    // Re-arrange the bars
+				    newDomain = []
+				   	for(i = 0; i < data.length; i++){
+				   		newDomain.push(data[i].State);
+				   	};
+				   	yScale.domain(newDomain);
+				    	
+				    groups
+						.transition()
+					    .duration(750)
+					    .delay(function(d, i) { return i * 10; })
+					    .attr("transform", function(d, i) { 
+					   		return "translate(0, " + yScale(d.State) + ")";
+				   		});
+			   	};
+
+			   	//Colour encode the bars
+			   	d3.selectAll("rect").style("fill", function(d, i){
+					return colorScale(d.Rate);
+				});
+
+				function colorScale(i){
+					var color = d3.scale.linear()
+					  .domain([min, max])
+					  .interpolate(d3.interpolateRgb)
+					  .range(["orangered", "silver"]);
+
+					return color(i);
+				};
+
 		    });
 
 		</script>
